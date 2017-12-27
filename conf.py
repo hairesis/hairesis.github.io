@@ -8,22 +8,22 @@ from datetime import datetime
 
 
 # Change this to the name of your blog
-project = 'The next wave.'
+project = 'Andrea\'s notes.'
 
 # Change this to the tagline of your blog
-tagline = 'If you don\'t have time to do it right, when will you have time to do it over? -- John Wooden'
+tagline = ''
 
 # Change this to the description of your blog
 description = 'A notebook rather than a Blog. Ideas, snippets... mostly an experiment written in the bed beside my sleepy beautiful wife.'
 
 # Change this to your name
-author = 'Andrea Baglioni'
+author = '0x41ndrea'
 
 # Change this to your copyright string
 copyright = '{:%Y}, {:s}'.format(datetime.now(), author)
 
 # Change this to your blog root URL (required for RSS feed)
-website = 'http://0x41ndrea.ddns.net/blog/html/'
+website = 'http://hairesis.github.io/'
 
 # **************************************************************
 # More tweaks you can do

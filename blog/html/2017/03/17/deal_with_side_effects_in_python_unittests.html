@@ -1,0 +1,140 @@
+<!DOCTYPE html><!--[if lt IE 7]>      <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="A notebook rather than a Blog. Ideas, snippets... mostly an experiment written in the bed beside my sleepy beautiful wife.">
+        <meta name="viewport" content="width=device-width">
+        <title>Deal with side-effects in Python unittests &mdash; Andrea&#39;s notes.</title>
+            <link rel="stylesheet" href="../../../_static/normalize.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/sphinx.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/main.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/flat.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+            <link rel="stylesheet" href="../../../_static/font-awesome.min.css" type="text/css">
+        <link rel="shortcut icon" href="../../../_static/tinkerer.ico" /><!-- Load modernizr and JQuery -->
+        <script src="../../../_static/vendor/modernizr-2.6.2.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="../../../_static/vendor/jquery-1.8.2.min.js"><\/script>')</script>
+        <script src="../../../_static/plugins.js"></script>
+        <script src="../../../_static/main.js"></script>
+        <link rel="search" title="Search" href="../../../search.html" /><link rel="next" title="Jenkins Bad Interpreter" href="../../02/13/jenkins_bad_interpreter.html" /><link rel="alternate" type="application/rss+xml" title="RSS" href="../../../rss.html" /><script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script><script type="text/javascript" src="../../../_static/underscore.js"></script><script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Scroll to content if on small screen
+            if (screen.width < 480)
+            {
+                $(document).scrollTop(document.getElementsByTagName("article")[0].offsetTop - 44);
+            }
+        });
+    </script></head>
+    <body role="document">
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+
+      <div id="container"><header role="banner">
+            <hgroup>
+              <h1><a href="../../../index.html">Andrea&#39;s notes.</a></h1></hgroup>
+          </header>
+      <nav role="navigation">
+            <ul><li class="main-nav">
+                  <a href="../../../index.html">Home</a>
+                </li>
+              </ul>
+          </nav><div class="main-container" role="main"><div class="main wrapper body clearfix"><article><div class="timestamp postmeta">
+            <span>March 17, 2017</span>
+        </div>
+    <div class="section" id="deal-with-side-effects-in-python-unittests">
+<h1>Deal with side-effects in Python unittests</h1>
+<p>It’s not infrequent (especially during refractories) the case where is necessary to deal with side-effects.
+I came across this situation recently and here is how I’ve approached it.</p>
+<p>Let’s take pycurl as an example. We don’t want to test pycurl (hopefully is tested somewhere else) but we want to know if at some point our code sets the right options in the pycurl object.
+Since there is no easy way to inspect the pycurl object, I came out with the solution in the snippet below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">pycurl_obj</span> <span class="o">=</span> <span class="n">Mock</span><span class="p">()</span>
+<span class="c1"># Create a named function that intercepts the setopt and</span>
+<span class="c1"># store the values in a dictionary rather than the object itself,</span>
+<span class="c1"># in this way asserts will be handy.</span>
+<span class="k">def</span> <span class="nf">setopt</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span> <span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+<span class="n">pycurl_obj</span><span class="o">.</span><span class="n">setopt</span> <span class="o">=</span> <span class="n">setopt</span>
+
+<span class="c1"># Tip: Allowing an optional param in classes where</span>
+<span class="c1"># you are going to side instantiate internal objects,</span>
+<span class="c1"># helps in tests and makes the class refactoring-friendly</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">pycurl_obj</span><span class="p">)</span>
+
+<span class="c1"># Assumption: verify = True should trigger the setopt on the pycurl object</span>
+<span class="c1"># filling as side-effect the &#39;options&#39; dictionary we defined above.</span>
+<span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;https://example.com&#39;</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Assert our assumption</span>
+<span class="k">assert</span> <span class="n">options</span><span class="p">[</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYPEER</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="k">assert</span> <span class="n">options</span><span class="p">[</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYHOST</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+
+    <div class="postmeta">
+        <div class="author">
+            <span>Posted by 0x41ndrea</span>
+        </div>
+        <div class="categories">
+            <span>
+                Filed under:
+                <a href="../../../categories/programming.html">programming</a>, <a href="../../../categories/python.html">python</a></span>
+        </div>
+        <div class="tags">
+            <span>
+                Tags:
+                <a href="../../../tags/programming.html">programming</a>, <a href="../../../tags/python.html">python</a>, <a href="../../../tags/unittests.html">unittests</a></span>
+        </div>
+        </div><ul class="related clearfix">
+            <li class="left"></li>
+            <li class="right"><a href="../../02/13/jenkins_bad_interpreter.html">Jenkins Bad Interpreter</a> &raquo; </li>
+        </ul></article><aside class="sidebar"><section><div class="widget">
+    <h1>Recent Posts</h1>
+    <ul><li>
+            <a href="#">Deal with side-effects in Python unittests</a>
+        </li><li>
+            <a href="../../02/13/jenkins_bad_interpreter.html">Jenkins Bad Interpreter</a>
+        </li><li>
+            <a href="../../02/07/prevent_command_being_logged_in_your_shell_history.html">Prevent command being logged in your shell history</a>
+        </li><li>
+            <a href="../../../2016/12/26/ctr_r_is_awesome.html">#ctr-r-is-awesome</a>
+        </li></ul>
+</div>
+</section><section><div class="widget" id="searchbox" role="search">
+    <h1><a href="#searchbox">Search</a></h1>
+    <form action="../../../search.html" method="get">
+        <input type="text" name="q" />
+        <button type="submit"><span class="fa fa-search"></span></button>
+    </form>
+</div></section></aside></div> <!-- #main --></div> <!-- #main-container -->
+
+        <div class="footer-container" role="contentinfo"><footer class="wrapper">&copy; Copyright 2017, 0x41ndrea. Powered by <a href="http://www.tinkerer.me/">Tinkerer</a> and <a href="http://sphinx.pocoo.org/">Sphinx</a>.</footer></div> <!-- footer-container -->
+
+      </div> <!--! end of #container --><!--[if lt IE 7 ]>
+          <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+          <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+        <![endif]-->
+    </body>
+</html>

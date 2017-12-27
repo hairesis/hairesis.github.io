@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Andrea's notes.</title>
+        <link>http://hairesis.github.io/</link>
+        <description></description>
+        <language>en-us</language>
+        <pubDate>Fri, 17 Mar 2017 00:00:00 +0000</pubDate>
+        
+        <item>
+            <link>http://hairesis.github.io/2017/03/17/deal_with_side_effects_in_python_unittests.html</link>
+            <guid>http://hairesis.github.io/2017/03/17/deal_with_side_effects_in_python_unittests.html</guid>
+            <title><![CDATA[Deal with side-effects in Python unittests]]></title>
+            <description><![CDATA[<h1>Deal with side-effects in Python unittests</h1>
+<p>It’s not infrequent (especially during refractories) the case where is necessary to deal with side-effects.
+I came across this situation recently and here is how I’ve approached it.</p>
+<p>Let’s take pycurl as an example. We don’t want to test pycurl (hopefully is tested somewhere else) but we want to know if at some point our code sets the right options in the pycurl object.
+Since there is no easy way to inspect the pycurl object, I came out with the solution in the snippet below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span/><span class="n">pycurl_obj</span> <span class="o">=</span> <span class="n">Mock</span><span class="p">()</span>
+<span class="c1"># Create a named function that intercepts the setopt and</span>
+<span class="c1"># store the values in a dictionary rather than the object itself,</span>
+<span class="c1"># in this way asserts will be handy.</span>
+<span class="k">def</span> <span class="nf">setopt</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span> <span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+<span class="n">pycurl_obj</span><span class="o">.</span><span class="n">setopt</span> <span class="o">=</span> <span class="n">setopt</span>
+
+<span class="c1"># Tip: Allowing an optional param in classes where</span>
+<span class="c1"># you are going to side instantiate internal objects,</span>
+<span class="c1"># helps in tests and makes the class refactoring-friendly</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">pycurl_obj</span><span class="p">)</span>
+
+<span class="c1"># Assumption: verify = True should trigger the setopt on the pycurl object</span>
+<span class="c1"># filling as side-effect the 'options' dictionary we defined above.</span>
+<span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">'https://example.com'</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Assert our assumption</span>
+<span class="k">assert</span> <span class="n">options</span><span class="p">[</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYPEER</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="k">assert</span> <span class="n">options</span><span class="p">[</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYHOST</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+</pre></div>
+</div>
+]]></description>
+            <category><![CDATA[ programming ]]></category>
+            <category><![CDATA[ python ]]></category>
+             <pubDate>Fri, 17 Mar 2017 00:00:00 +0000</pubDate>
+        </item>
+    
+        <item>
+            <link>http://hairesis.github.io/2017/02/13/jenkins_bad_interpreter.html</link>
+            <guid>http://hairesis.github.io/2017/02/13/jenkins_bad_interpreter.html</guid>
+            <title><![CDATA[Jenkins Bad Interpreter]]></title>
+            <description><![CDATA[<h1>Jenkins Bad Interpreter</h1>
+<p>If the Jenkins build breaks and the error is: <cite>bad interpreter: No such file or directory</cite>, you likely reached the maximum number of character allowed in a she-bang (#! executable).
+In many many modern linux implementations such value is set in the kernel variable <cite>BINPRM_BUF_SIZE</cite> to 127.</p>
+<p>This limit is also mentioned in <a class="reference external" href="https://linux.die.net/man/2/execve">man execve</a></p>
+<div class="highlight-bash"><div class="highlight"><pre><span/>... /data/jenkins/workspace/smoke_tests/environment/prod-az1-env-region/label: bad interpreter: No such file or directory
+</pre></div>
+</div>
+<p>It frequently happens with the <a class="reference external" href="https://wiki.jenkins-ci.org/display/JENKINS/Matrix+Project+Plugin">Matrix Jenkins Plugin</a> that concatenate every variable in the path name.</p>
+<p>There is no silver bullet for this issue. Using /var/tmp might be a good approach but be aware that it will be out of the Jenkins control.</p>
+]]></description>
+             <pubDate>Mon, 13 Feb 2017 00:00:00 +0000</pubDate>
+        </item>
+    
+        <item>
+            <link>http://hairesis.github.io/2017/02/07/prevent_command_being_logged_in_your_shell_history.html</link>
+            <guid>http://hairesis.github.io/2017/02/07/prevent_command_being_logged_in_your_shell_history.html</guid>
+            <title><![CDATA[Prevent command being logged in your shell history]]></title>
+            <description><![CDATA[<h1>Prevent command being logged in your shell history</h1>
+<p>Sometime happens that I have to test something which requires to insert a password.
+Being reluctant to write down my password in a source/text files (I would hate to rotate leaked passwords on github), I typically use environment variables, but still the password leaks in the bash_history.</p>
+<p>A way (though not the only one) to overcome this type of leaking is to set the <a class="reference external" href="http://man7.org/linux/man-pages/man1/bash.1.html">HISTCONTROL</a> environment variable. It works either under bash or zsh.</p>
+<p>Values for <a class="reference external" href="http://man7.org/linux/man-pages/man1/bash.1.html">HISTCONTROL</a> are:</p>
+<ul class="simple">
+<li>ignorespaceflag: tells your shell to not record commands that start with spaces</li>
+<li>ignoredups:  tells your shell to not record duplicate commands.</li>
+<li>ignoreboth: if you wish to specify both values</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre><span/><span class="nb">echo</span> <span class="s2">"HISTCONTROL=ignoreboth"</span> &gt;&gt; ~/.bashrc <span class="o">&amp;&amp;</span> <span class="nb">source</span> ~/.bashrc
+</pre></div>
+</div>
+]]></description>
+             <pubDate>Tue, 07 Feb 2017 00:00:00 +0000</pubDate>
+        </item>
+    
+        <item>
+            <link>http://hairesis.github.io/2016/12/26/ctr_r_is_awesome.html</link>
+            <guid>http://hairesis.github.io/2016/12/26/ctr_r_is_awesome.html</guid>
+            <title><![CDATA[#ctr-r-is-awesome]]></title>
+            <description><![CDATA[<h1>#ctr-r-is-awesome</h1>
+<p>I am a CTR+R addict. I love to search in my bash history back to the command I used to curl that API or just finding that command I-forgot-the-name-but-which-I-remember-the-path on that server.
+Lately, I’ve also started tagging my commands by adding a hash-tag right before my command:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span/>$ <span class="c1">#get-images curl -k -H “Content-Type=applicatio/json+somethingWeired” host000123.example.com/images?start=50&amp;end=100&amp;type=’imageType’&amp;you%20egot%20ethe%20eidea/</span>
+</pre></div>
+</div>
+<p>In this way the command does not get executed (# is interpreted as a comment) and I also gain a sort of tagging somehow easier to remember than a hostname or a nasty parameter.</p>
+]]></description>
+             <pubDate>Mon, 26 Dec 2016 00:00:00 +0000</pubDate>
+        </item>
+    
+    </channel>
+</rss>
