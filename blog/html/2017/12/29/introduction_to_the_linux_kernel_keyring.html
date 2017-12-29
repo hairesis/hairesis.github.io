@@ -1,0 +1,167 @@
+<!DOCTYPE html><!--[if lt IE 7]>      <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:og="http://ogp.me/ns#"
+    xmlns:fb="https://www.facebook.com/2008/fbml" class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="A notebook rather than a Blog. Ideas, snippets... mostly an experiment written in the bed beside my sleepy beautiful wife.">
+        <meta name="viewport" content="width=device-width">
+        <title>Introduction to the Linux Kernel Keyring &mdash; Andrea&#39;s notes.</title>
+            <link rel="stylesheet" href="../../../_static/normalize.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/sphinx.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/main.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/flat.css" type="text/css">
+            <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+            <link rel="stylesheet" href="../../../_static/font-awesome.min.css" type="text/css">
+        <link rel="shortcut icon" href="../../../_static/tinkerer.ico" /><!-- Load modernizr and JQuery -->
+        <script src="../../../_static/vendor/modernizr-2.6.2.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="../../../_static/vendor/jquery-1.8.2.min.js"><\/script>')</script>
+        <script src="../../../_static/plugins.js"></script>
+        <script src="../../../_static/main.js"></script>
+        <link rel="search" title="Search" href="../../../search.html" /><link rel="next" title="Deal with side-effects in Python unittests" href="../../03/17/deal_with_side_effects_in_python_unittests.html" /><link rel="alternate" type="application/rss+xml" title="RSS" href="../../../rss.html" /><script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.6.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        SOURCELINK_SUFFIX: '.txt',
+        HAS_SOURCE:  true
+      };
+    </script><script type="text/javascript" src="../../../_static/underscore.js"></script><script type="text/javascript" src="../../../_static/doctools.js"></script><script type="text/javascript" src="../../../_static/disqus.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Scroll to content if on small screen
+            if (screen.width < 480)
+            {
+                $(document).scrollTop(document.getElementsByTagName("article")[0].offsetTop - 44);
+            }
+        });
+    </script></head>
+    <body role="document">
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+
+      <div id="container"><header role="banner">
+            <hgroup>
+              <h1><a href="../../../index.html">Andrea&#39;s notes.</a></h1></hgroup>
+          </header>
+      <nav role="navigation">
+            <ul><li class="main-nav">
+                  <a href="../../../index.html">Home</a>
+                </li>
+              </ul>
+          </nav><div class="main-container" role="main"><div class="main wrapper body clearfix"><article><div class="timestamp postmeta">
+            <span>December 29, 2017</span>
+        </div>
+    <div class="section" id="introduction-to-the-linux-kernel-keyring">
+<h1>Introduction to the Linux Kernel Keyring</h1>
+<p>Everyone faced at least once the problem of storing credentials (for a CLI, a ReST API, or whatnot).</p>
+<p>Options are: exporting an environment variable or more conveniently store the secret in plaintext, perhaps with access permissions.</p>
+<p>The latter is often encouraged by guidelines of tools providing user and password tuples (in CSVs) to store in <em>.ini</em> or <em>.conf</em> files leading to leaked passwords or why not <a class="reference external" href="https://steemit.com/bitcoin/&#64;defango/searching-for-bitcoin-with-bigquery-or-ai-systems">bitcoin wallets private keys</a> in git repositories, logs, Jenkins build Jobs: secrets are NOT configuration.</p>
+<p>There are few technologies out in the market either cloud providers or open source like <a class="reference external" href="https://github.com/latchset/custodia">custodia</a>, however often we don’t have access to a Cloud specific service or we don’t want to deploy another tool but we still want to store or cache credentials safely on a host. In this post I will then focus on the Linux Kernel Keyring.</p>
+<p>The Linux Kernel Keyring is not a very publicised feature of the linux Kernel. It offers a C API interface that wraps the keyctl Linux syscall,
+comes straight away on your Linux hosts since kernel 2.6.x and the keyutils library can be easily leveraged using bash, python, C …</p>
+<p>Keys are held in memory and secured by the kernel.</p>
+<div class="section" id="create-a-new-key">
+<h2>Create a new Key</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="c1"># keyctl add &lt;type&gt; &lt;desc&gt; &lt;data&gt; &lt;keyring&gt;</span>
+
+<span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl add user <span class="s2">&quot;A Simple Keyring Demo&quot;</span> s3cret @u
+<span class="m">447071188</span>
+</pre></div>
+</div>
+<ul>
+<li><p class="first"><em>type</em> describes the type of key to be used. The user type used in the example can be used for arbitrary user-defined keys.</p>
+</li>
+<li><p class="first"><em>keyring</em> is the container in to which the key is going. In the example above we used &#64;u.</p>
+<p>From man pages on &#64;u:</p>
+<blockquote>
+<div><p><em>This keyring is shared between all the processes owned by a particular user. It isn’t searched directly but is normally linked to from the session keyring.</em></p>
+</div></blockquote>
+</li>
+<li><p class="first">The returned number is the Key identifier we can use in the future to retrieve the key.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="inspect-the-keyring">
+<h2>Inspect the Keyring</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl show
+Session Keyring
+        -3 --alswrv    <span class="m">500</span>   <span class="m">500</span>  keyring: _ses
+ <span class="m">430216800</span> --alswrv    <span class="m">500</span>    -1   <span class="se">\_</span> keyring: _uid.500
+ <span class="m">447071188</span> --alswrv    <span class="m">500</span>   <span class="m">500</span>       <span class="se">\_</span> user: A Simple Keyring Demo
+</pre></div>
+</div>
+<p>We can clearly see that the key has been linked to the vagrant’s user dedicated keyring.</p>
+<p>Refer to <a class="reference external" href="http://man7.org/linux/man-pages/man1/keyctl.1.html">keyctl</a> and <a class="reference external" href="http://man7.org/linux/man-pages/man7/keyutils.7.html">keyutils</a> man pages for more details.</p>
+</div>
+<div class="section" id="print-the-key">
+<h2>Print the key</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl print <span class="m">447071188</span>
+s3cret
+</pre></div>
+</div>
+<p>This just scratches the surface. It is possible to write resolvers to retrieve keys from external systems, setup permissions on a single key (interesting reading <a class="reference external" href="https://mjg59.dreamwidth.org/37333.html">here</a>), set an expiry date on the keys, forget the key after the user session ends …</p>
+<p>Other interesting readings can be found at:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://lwn.net/Articles/210502/">LWN</a></li>
+<li><a class="reference external" href="https://github.com/jdukes/pykeyctl/blob/master/docs/Overview.org">pykeyctl/docs</a></li>
+</ul>
+</div>
+</div>
+
+    <div class="postmeta">
+        <div class="author">
+            <span>Posted by 0x41ndrea</span>
+        </div>
+        <div class="categories">
+            <span>
+                Filed under:
+                <a href="../../../categories/linux.html">Linux</a>, <a href="../../../categories/kernel.html">Kernel</a>, <a href="../../../categories/security.html">Security</a></span>
+        </div>
+        
+        </div><ul class="related clearfix">
+            <li class="left"></li>
+            <li class="right"><a href="../../03/17/deal_with_side_effects_in_python_unittests.html">Deal with side-effects in Python unittests</a> &raquo; </li>
+        </ul><div id="disqus_thread"></div><script type="text/javascript">    var disqus_shortname = "hairesis-github-io";    var disqus_identifier = "2017/12/29/introduction_to_the_linux_kernel_keyring";    disqus_thread();</script><noscript>Please enable JavaScript to view the    <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript></article><aside class="sidebar"><section><div class="widget">
+    <h1>Recent Posts</h1>
+    <ul><li>
+            <a href="#">Introduction to the Linux Kernel Keyring</a>
+        </li><li>
+            <a href="../../03/17/deal_with_side_effects_in_python_unittests.html">Deal with side-effects in Python unittests</a>
+        </li><li>
+            <a href="../../02/13/jenkins_bad_interpreter.html">Jenkins Bad Interpreter</a>
+        </li><li>
+            <a href="../../02/07/prevent_command_being_logged_in_your_shell_history.html">Prevent command being logged in your shell history</a>
+        </li><li>
+            <a href="../../../2016/12/26/ctr_r_is_awesome.html">#ctr-r-is-awesome</a>
+        </li></ul>
+</div>
+</section><section><div class="widget" id="searchbox" role="search">
+    <h1><a href="#searchbox">Search</a></h1>
+    <form action="../../../search.html" method="get">
+        <input type="text" name="q" />
+        <button type="submit"><span class="fa fa-search"></span></button>
+    </form>
+</div></section></aside></div> <!-- #main --></div> <!-- #main-container -->
+
+        <div class="footer-container" role="contentinfo"><footer class="wrapper">&copy; Copyright 2017, 0x41ndrea. Powered by <a href="http://www.tinkerer.me/">Tinkerer</a> and <a href="http://sphinx.pocoo.org/">Sphinx</a>.</footer></div> <!-- footer-container -->
+
+      </div> <!--! end of #container --><!--[if lt IE 7 ]>
+          <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+          <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+        <![endif]-->
+    </body>
+</html>

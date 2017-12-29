@@ -5,8 +5,73 @@
         <link>http://hairesis.github.io/</link>
         <description></description>
         <language>en-us</language>
-        <pubDate>Fri, 17 Mar 2017 00:00:00 +0000</pubDate>
+        <pubDate>Fri, 29 Dec 2017 00:00:00 +0000</pubDate>
         
+        <item>
+            <link>http://hairesis.github.io/2017/12/29/introduction_to_the_linux_kernel_keyring.html</link>
+            <guid>http://hairesis.github.io/2017/12/29/introduction_to_the_linux_kernel_keyring.html</guid>
+            <title><![CDATA[Introduction to the Linux Kernel Keyring]]></title>
+            <description><![CDATA[<h1>Introduction to the Linux Kernel Keyring</h1>
+<p>Everyone faced at least once the problem of storing credentials (for a CLI, a ReST API, or whatnot).</p>
+<p>Options are: exporting an environment variable or more conveniently store the secret in plaintext, perhaps with access permissions.</p>
+<p>The latter is often encouraged by guidelines of tools providing user and password tuples (in CSVs) to store in <em>.ini</em> or <em>.conf</em> files leading to leaked passwords or why not <a class="reference external" href="https://steemit.com/bitcoin/@defango/searching-for-bitcoin-with-bigquery-or-ai-systems">bitcoin wallets private keys</a> in git repositories, logs, Jenkins build Jobs: secrets are NOT configuration.</p>
+<p>There are few technologies out in the market either cloud providers or open source like <a class="reference external" href="https://github.com/latchset/custodia">custodia</a>, however often we don’t have access to a Cloud specific service or we don’t want to deploy another tool but we still want to store or cache credentials safely on a host. In this post I will then focus on the Linux Kernel Keyring.</p>
+<p>The Linux Kernel Keyring is not a very publicised feature of the linux Kernel. It offers a C API interface that wraps the keyctl Linux syscall,
+comes straight away on your Linux hosts since kernel 2.6.x and the keyutils library can be easily leveraged using bash, python, C …</p>
+<p>Keys are held in memory and secured by the kernel.</p>
+<div class="section" id="create-a-new-key">
+<h2>Create a new Key</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span/><span class="c1"># keyctl add &lt;type&gt; &lt;desc&gt; &lt;data&gt; &lt;keyring&gt;</span>
+
+<span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl add user <span class="s2">"A Simple Keyring Demo"</span> s3cret @u
+<span class="m">447071188</span>
+</pre></div>
+</div>
+<ul>
+<li><p class="first"><em>type</em> describes the type of key to be used. The user type used in the example can be used for arbitrary user-defined keys.</p>
+</li>
+<li><p class="first"><em>keyring</em> is the container in to which the key is going. In the example above we used @u.</p>
+<p>From man pages on @u:</p>
+<blockquote>
+<div><p><em>This keyring is shared between all the processes owned by a particular user. It isn’t searched directly but is normally linked to from the session keyring.</em></p>
+</div></blockquote>
+</li>
+<li><p class="first">The returned number is the Key identifier we can use in the future to retrieve the key.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="inspect-the-keyring">
+<h2>Inspect the Keyring</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span/><span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl show
+Session Keyring
+        -3 --alswrv    <span class="m">500</span>   <span class="m">500</span>  keyring: _ses
+ <span class="m">430216800</span> --alswrv    <span class="m">500</span>    -1   <span class="se">\_</span> keyring: _uid.500
+ <span class="m">447071188</span> --alswrv    <span class="m">500</span>   <span class="m">500</span>       <span class="se">\_</span> user: A Simple Keyring Demo
+</pre></div>
+</div>
+<p>We can clearly see that the key has been linked to the vagrant’s user dedicated keyring.</p>
+<p>Refer to <a class="reference external" href="http://man7.org/linux/man-pages/man1/keyctl.1.html">keyctl</a> and <a class="reference external" href="http://man7.org/linux/man-pages/man7/keyutils.7.html">keyutils</a> man pages for more details.</p>
+</div>
+<div class="section" id="print-the-key">
+<h2>Print the key</h2>
+<div class="highlight-bash"><div class="highlight"><pre><span/><span class="o">[</span>vagrant@localhost ~<span class="o">]</span>$ keyctl print <span class="m">447071188</span>
+s3cret
+</pre></div>
+</div>
+<p>This just scratches the surface. It is possible to write resolvers to retrieve keys from external systems, setup permissions on a single key (interesting reading <a class="reference external" href="https://mjg59.dreamwidth.org/37333.html">here</a>), set an expiry date on the keys, forget the key after the user session ends …</p>
+<p>Other interesting readings can be found at:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://lwn.net/Articles/210502/">LWN</a></li>
+<li><a class="reference external" href="https://github.com/jdukes/pykeyctl/blob/master/docs/Overview.org">pykeyctl/docs</a></li>
+</ul>
+</div>
+]]></description>
+            <category><![CDATA[ Linux ]]></category>
+            <category><![CDATA[ Kernel ]]></category>
+            <category><![CDATA[ Security ]]></category>
+             <pubDate>Fri, 29 Dec 2017 00:00:00 +0000</pubDate>
+        </item>
+    
         <item>
             <link>http://hairesis.github.io/2017/03/17/deal_with_side_effects_in_python_unittests.html</link>
             <guid>http://hairesis.github.io/2017/03/17/deal_with_side_effects_in_python_unittests.html</guid>
